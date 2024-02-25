@@ -46,5 +46,7 @@ func (c *SlackClient) Listen() {
 			}
 		}
 	}()
-	c.WsClient.Run()
+	if err := c.WsClient.Run(); err != nil {
+		c.Logger.Fatalf("Error running WebSocket client: %v", err)
+	}
 }
