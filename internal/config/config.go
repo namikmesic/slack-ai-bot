@@ -19,6 +19,7 @@ func LoadConfig(configPaths []string, configName string) (*AppConfig, error) {
 
 	viper.SetConfigName(configName) // Name of config file (without extension)
 	viper.SetConfigType("toml")     // Set the type of the configuration file explicitly
+
 	for _, path := range configPaths {
 		viper.AddConfigPath(path) // Paths to look for the config file in
 	}

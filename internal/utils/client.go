@@ -10,7 +10,7 @@ import (
 )
 
 type SlackClient struct {
-	ApiClient  *slack.Client
+	APIClient  *slack.Client
 	WsClient   *socketmode.Client
 	Dispatcher *dispatcher.EventDispatcher
 	Logger     *log.Logger
@@ -22,7 +22,7 @@ func NewSlackClient(ctx context.Context, apiToken, appToken string, logger *log.
 	wsclient := socketmode.New(api, socketmode.OptionLog(logger))
 
 	return &SlackClient{
-		ApiClient:  api,
+		APIClient:  api,
 		WsClient:   wsclient,
 		Dispatcher: nil,
 		Logger:     logger,
@@ -30,8 +30,8 @@ func NewSlackClient(ctx context.Context, apiToken, appToken string, logger *log.
 	}
 }
 
-func (c *SlackClient) RegisterNewEventDispatcher(dispatcher *dispatcher.EventDispatcher) {
-	c.Dispatcher = dispatcher
+func (c *SlackClient) RegisterNewEventDispatcher(dp *dispatcher.EventDispatcher) {
+	c.Dispatcher = dp
 }
 
 func (c *SlackClient) Listen() {
@@ -39,14 +39,15 @@ func (c *SlackClient) Listen() {
 		for {
 			select {
 			case <-c.Context.Done():
-				c.Logger.Println("Context cancelled, stopping listener loop.")
+				c.Logger.Println("context cancelled, stopping listener loop")
 				return
 			case evt := <-c.WsClient.Events:
 				go c.Dispatcher.Dispatch(evt)
 			}
 		}
 	}()
+
 	if err := c.WsClient.Run(); err != nil {
-		c.Logger.Fatalf("Error running WebSocket client: %v", err)
+		c.Logger.Fatalf("error running websocket client: %v", err)
 	}
 }

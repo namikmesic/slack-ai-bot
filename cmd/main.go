@@ -13,8 +13,9 @@ import (
 
 func main() {
 	cfg, err := config.LoadConfig([]string{".", "./config"}, "config")
+
 	if err != nil {
-		log.Fatalf("Error loading configuration: %v", err)
+		log.Fatalf("error loading configuration: %v", err)
 	}
 	// Create a new logger
 	l := logger.New(cfg.Environment)
@@ -26,10 +27,10 @@ func main() {
 	slackClient := utils.NewSlackClient(ctx, cfg.SlackBotToken, cfg.SlackAppToken, l)
 
 	// Register the events handler
-	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.ApiClient, slackClient.WsClient, slackClient.Logger)
+	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.APIClient, slackClient.WsClient, slackClient.Logger)
 
 	// Register the AppMention handler
-	appMentionHandler := handlers.NewAppMentionEventHandler(slackClient.ApiClient)
+	appMentionHandler := handlers.NewAppMentionEventHandler(slackClient.APIClient)
 	eventsDispatcher.RegisterNeweventsAPIEventHandler("app_mention", appMentionHandler)
 
 	slackClient.RegisterNewEventDispatcher(eventsDispatcher)

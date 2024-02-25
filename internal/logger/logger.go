@@ -9,5 +9,6 @@ import (
 func New(environment string) *log.Logger {
 	prefix := "[" + environment + "] "
 	logger := log.New(os.Stdout, prefix, log.Lshortfile|log.LstdFlags)
+
 	return logger
 }
