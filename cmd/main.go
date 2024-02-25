@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	"github.com/namikmesic/slack-ai-bot/internal/config"
-	"github.com/namikmesic/slack-ai-bot/internal/slack"
-	"github.com/namikmesic/slack-ai-bot/internal/slack/handlers"
+	"github.com/namikmesic/slack-ai-bot/internal/dispatcher"
+	"github.com/namikmesic/slack-ai-bot/internal/handlers"
+	"github.com/namikmesic/slack-ai-bot/internal/logger"
+	"github.com/namikmesic/slack-ai-bot/internal/utils"
 )
 
 func main() {
@@ -15,18 +16,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
-	logger := log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)
+	// Create a new logger
+	l := logger.New(cfg.Environment)
+
+	// Create a new context
 	ctx := context.Background()
 
-	apiToken := cfg.SlackBotToken
-	appToken := cfg.SlackAppToken
+	// Create a new Slack client
+	slackClient := utils.NewSlackClient(ctx, cfg.SlackBotToken, cfg.SlackAppToken, l)
 
-	slackClient := slack.NewClient(ctx, apiToken, appToken, logger)
+	// Register the events handler
+	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.ApiClient, slackClient.WsClient, slackClient.Logger)
 
-	// Register the AppMentionHandler
+	// Register the AppMention handler
 	appMentionHandler := handlers.NewAppMentionEventHandler(slackClient.ApiClient)
-	slackClient.RegisterHandler("app_mention", appMentionHandler)
+	eventsDispatcher.RegisterNeweventsAPIEventHandler("app_mention", appMentionHandler)
+
+	slackClient.RegisterNewEventDispatcher(eventsDispatcher)
 
 	// Start listening for events
-	slackClient.StartListeningLoop()
+	slackClient.Listen()
 }
