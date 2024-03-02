@@ -21,4 +21,7 @@
 go.work
 
 # Configuration files
-*.toml
+config.toml
+
+# Air
+tmp
