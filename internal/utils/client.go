@@ -17,9 +17,9 @@ type SlackClient struct {
 	Context    context.Context
 }
 
-func NewSlackClient(ctx context.Context, apiToken, appToken string, logger *log.Logger) *SlackClient {
-	api := slack.New(apiToken, slack.OptionAppLevelToken(appToken), slack.OptionLog(logger))
-	wsclient := socketmode.New(api, socketmode.OptionLog(logger))
+func NewSlackClient(ctx context.Context, apiToken, appToken string, isDev bool, logger *log.Logger) *SlackClient {
+	api := slack.New(apiToken, slack.OptionAppLevelToken(appToken), slack.OptionLog(logger), slack.OptionDebug(isDev))
+	wsclient := socketmode.New(api, socketmode.OptionLog(logger), socketmode.OptionDebug(isDev))
 
 	return &SlackClient{
 		APIClient:  api,

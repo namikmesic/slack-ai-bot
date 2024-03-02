@@ -10,7 +10,7 @@ import (
 type AppConfig struct {
 	SlackAppToken string `mapstructure:"slack_app_token"`
 	SlackBotToken string `mapstructure:"slack_bot_token"`
-	Environment   string `mapstructure:"environment"`
+	IsDevelopment   bool `mapstructure:"development"`
 }
 
 // LoadConfig reads configuration from file or environment variables.

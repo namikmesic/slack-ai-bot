@@ -18,13 +18,13 @@ func main() {
 		log.Fatalf("error loading configuration: %v", err)
 	}
 	// Create a new logger
-	l := logger.New(cfg.Environment)
+	applogger := logger.New()
 
 	// Create a new context
 	ctx := context.Background()
 
 	// Create a new Slack client
-	slackClient := utils.NewSlackClient(ctx, cfg.SlackBotToken, cfg.SlackAppToken, l)
+	slackClient := utils.NewSlackClient(ctx, cfg.SlackBotToken, cfg.SlackAppToken, cfg.IsDevelopment, applogger)
 
 	// Register the events handler
 	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.APIClient, slackClient.WsClient, slackClient.Logger)
