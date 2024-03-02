@@ -11,7 +11,7 @@ import (
 
 type EventDispatcher struct {
 	APIClient        *slack.Client
-	WsClient         *socketmode.Client
+	WSClient         *socketmode.Client
 	APIEventHandlers map[string]handlers.EventsAPIEventHandler
 	Logger           *log.Logger
 }
@@ -19,13 +19,13 @@ type EventDispatcher struct {
 func NewEventDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, logger *log.Logger) *EventDispatcher {
 	return &EventDispatcher{
 		APIClient:        apiClient,
-		WsClient:         wsClient,
+		WSClient:         wsClient,
 		APIEventHandlers: make(map[string]handlers.EventsAPIEventHandler),
 		Logger:           logger,
 	}
 }
 
-func (h *EventDispatcher) RegisterNeweventsAPIEventHandler(eventType string, handler handlers.EventsAPIEventHandler) {
+func (h *EventDispatcher) RegisterNewEventsAPIEventHandler(eventType string, handler handlers.EventsAPIEventHandler) {
 	h.APIEventHandlers[eventType] = handler
 }
 
@@ -57,6 +57,6 @@ func (h *EventDispatcher) Dispatch(event socketmode.Event) {
 			return
 		}
 
-		h.WsClient.Ack(*event.Request)
+		h.WSClient.Ack(*event.Request)
 	}
 }

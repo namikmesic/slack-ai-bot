@@ -27,12 +27,12 @@ func main() {
 	slackClient := utils.NewSlackClient(ctx, cfg, applogger)
 
 	// Register the events handler
-	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.APIClient, slackClient.WsClient, slackClient.Logger)
+	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.Logger)
 	slackClient.RegisterNewEventDispatcher(eventsDispatcher)
 
 	// Register the AppMention handler
 	appMentionHandler := handlers.NewAppMentionEventHandler(slackClient.APIClient)
-	eventsDispatcher.RegisterNeweventsAPIEventHandler("app_mention", appMentionHandler)
+	eventsDispatcher.RegisterNewEventsAPIEventHandler("app_mention", appMentionHandler)
 
 	// Start listening for events
 	slackClient.Listen()

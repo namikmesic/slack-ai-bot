@@ -12,7 +12,7 @@ import (
 
 type SlackClient struct {
 	APIClient  *slack.Client
-	WsClient   *socketmode.Client
+	WSClient   *socketmode.Client
 	Dispatcher *dispatcher.EventDispatcher
 	Logger     *log.Logger
 	Context    context.Context
@@ -25,7 +25,7 @@ func NewSlackClient(ctx context.Context, cfg *config.AppConfig, logger *log.Logg
 
 	return &SlackClient{
 		APIClient:  api,
-		WsClient:   wsclient,
+		WSClient:   wsclient,
 		Dispatcher: nil,
 		Logger:     logger,
 		Context:    ctx,
@@ -43,13 +43,13 @@ func (c *SlackClient) Listen() {
 			case <-c.Context.Done():
 				c.Logger.Println("context cancelled, stopping listener loop")
 				return
-			case evt := <-c.WsClient.Events:
+			case evt := <-c.WSClient.Events:
 				go c.Dispatcher.Dispatch(evt)
 			}
 		}
 	}()
 
-	if err := c.WsClient.Run(); err != nil {
+	if err := c.WSClient.Run(); err != nil {
 		c.Logger.Fatalf("error running websocket client: %v", err)
 	}
 }

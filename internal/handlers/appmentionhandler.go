@@ -19,10 +19,17 @@ func NewAppMentionEventHandler(apiClient *slack.Client) *AppMentionHandler {
 
 func (h *AppMentionHandler) Handle(event slackevents.EventsAPIEvent) error {
 	if appMentionEvent, ok := event.InnerEvent.Data.(*slackevents.AppMentionEvent); ok {
-		_, _, err := h.APIClient.PostMessage(appMentionEvent.Channel, slack.MsgOptionText("Hello, thanks for mentioning me!", false))
+
+		_, err := h.APIClient.PostEphemeral(appMentionEvent.Channel, appMentionEvent.User, slack.MsgOptionText("Please note, as an AI, there's a possibility I might not always be accurate!", false))
 
 		if err != nil {
-			return fmt.Errorf("failed to post message: %w", err)
+			return fmt.Errorf("failed to post warning message: %w", err)
+		}
+
+		_, _, err = h.APIClient.PostMessage(appMentionEvent.Channel, slack.MsgOptionText("Hello, thanks for mentioning me!", false), slack.MsgOptionTS(appMentionEvent.TimeStamp))
+
+		if err != nil {
+			return fmt.Errorf("failed to post response message: %w", err)
 		}
 
 		return nil
