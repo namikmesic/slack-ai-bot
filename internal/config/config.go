@@ -37,3 +37,4 @@ func LoadConfig(configPaths []string, configName string) (*AppConfig, error) {
 
 	return &config, nil
 }
+

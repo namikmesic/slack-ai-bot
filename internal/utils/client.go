@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/namikmesic/slack-ai-bot/internal/config"
 	"github.com/namikmesic/slack-ai-bot/internal/dispatcher"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
@@ -17,9 +18,10 @@ type SlackClient struct {
 	Context    context.Context
 }
 
-func NewSlackClient(ctx context.Context, apiToken, appToken string, isDev bool, logger *log.Logger) *SlackClient {
-	api := slack.New(apiToken, slack.OptionAppLevelToken(appToken), slack.OptionLog(logger), slack.OptionDebug(isDev))
-	wsclient := socketmode.New(api, socketmode.OptionLog(logger), socketmode.OptionDebug(isDev))
+
+func NewSlackClient(ctx context.Context, cfg *config.AppConfig, logger *log.Logger) *SlackClient {
+	api := slack.New(cfg.SlackBotToken, slack.OptionAppLevelToken(cfg.SlackAppToken), slack.OptionLog(logger), slack.OptionDebug(cfg.IsDevelopment))
+	wsclient := socketmode.New(api, socketmode.OptionLog(logger), socketmode.OptionDebug(cfg.IsDevelopment))
 
 	return &SlackClient{
 		APIClient:  api,

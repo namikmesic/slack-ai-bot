@@ -24,7 +24,7 @@ func main() {
 	ctx := context.Background()
 
 	// Create a new Slack client
-	slackClient := utils.NewSlackClient(ctx, cfg.SlackBotToken, cfg.SlackAppToken, cfg.IsDevelopment, applogger)
+	slackClient := utils.NewSlackClient(ctx, cfg, applogger)
 
 	// Register the events handler
 	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.APIClient, slackClient.WsClient, slackClient.Logger)
