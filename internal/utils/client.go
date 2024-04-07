@@ -13,11 +13,10 @@ import (
 type SlackClient struct {
 	APIClient  *slack.Client
 	WSClient   *socketmode.Client
-	Dispatcher *dispatcher.EventDispatcher
+	Dispatcher *dispatcher.MessageDispatcher
 	Logger     *log.Logger
 	Context    context.Context
 }
-
 
 func NewSlackClient(ctx context.Context, cfg *config.AppConfig, logger *log.Logger) *SlackClient {
 	api := slack.New(cfg.SlackBotToken, slack.OptionAppLevelToken(cfg.SlackAppToken), slack.OptionLog(logger), slack.OptionDebug(cfg.IsDevelopment))
@@ -32,7 +31,7 @@ func NewSlackClient(ctx context.Context, cfg *config.AppConfig, logger *log.Logg
 	}
 }
 
-func (c *SlackClient) RegisterNewEventDispatcher(dp *dispatcher.EventDispatcher) {
+func (c *SlackClient) RegisterNewMessageDispatcher(dp *dispatcher.MessageDispatcher) {
 	c.Dispatcher = dp
 }
 

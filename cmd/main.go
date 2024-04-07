@@ -6,7 +6,6 @@ import (
 
 	"github.com/namikmesic/slack-ai-bot/internal/config"
 	"github.com/namikmesic/slack-ai-bot/internal/dispatcher"
-	"github.com/namikmesic/slack-ai-bot/internal/handlers"
 	"github.com/namikmesic/slack-ai-bot/internal/logger"
 	"github.com/namikmesic/slack-ai-bot/internal/utils"
 )
@@ -27,12 +26,8 @@ func main() {
 	slackClient := utils.NewSlackClient(ctx, cfg, applogger)
 
 	// Register the events handler
-	eventsDispatcher := dispatcher.NewEventDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.Logger)
-	slackClient.RegisterNewEventDispatcher(eventsDispatcher)
-
-	// Register the AppMention handler
-	appMentionHandler := handlers.NewAppMentionEventHandler(slackClient.APIClient)
-	eventsDispatcher.RegisterNewEventsAPIEventHandler("app_mention", appMentionHandler)
+	messageDispatcher := dispatcher.NewMessageDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.Logger)
+	slackClient.RegisterNewMessageDispatcher(messageDispatcher)
 
 	// Start listening for events
 	slackClient.Listen()

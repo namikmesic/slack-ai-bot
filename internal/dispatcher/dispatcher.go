@@ -2,61 +2,103 @@ package dispatcher
 
 import (
 	"log"
+	"sync"
 
-	"github.com/namikmesic/slack-ai-bot/internal/handlers"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 )
 
-type EventDispatcher struct {
-	APIClient        *slack.Client
-	WSClient         *socketmode.Client
-	APIEventHandlers map[string]handlers.EventsAPIEventHandler
-	Logger           *log.Logger
+type MessageDispatcher struct {
+	APIClient      *slack.Client
+	WSClient       *socketmode.Client
+	Logger         *log.Logger
+	TrackedThreads sync.Map
 }
 
-func NewEventDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, logger *log.Logger) *EventDispatcher {
-	return &EventDispatcher{
-		APIClient:        apiClient,
-		WSClient:         wsClient,
-		APIEventHandlers: make(map[string]handlers.EventsAPIEventHandler),
-		Logger:           logger,
+func NewMessageDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, logger *log.Logger) *MessageDispatcher {
+	return &MessageDispatcher{
+		APIClient:      apiClient,
+		WSClient:       wsClient,
+		Logger:         logger,
+		TrackedThreads: sync.Map{},
 	}
 }
 
-func (h *EventDispatcher) RegisterNewEventsAPIEventHandler(eventType string, handler handlers.EventsAPIEventHandler) {
-	h.APIEventHandlers[eventType] = handler
-}
-
-func (h *EventDispatcher) Dispatch(event socketmode.Event) {
+func (d *MessageDispatcher) Dispatch(event socketmode.Event) {
 	switch event.Type {
-	case socketmode.EventTypeConnecting:
-		h.Logger.Printf(string(event.Type))
-	case socketmode.EventTypeConnected:
-		h.Logger.Printf(string(event.Type))
-	case socketmode.EventTypeHello:
-		h.Logger.Printf(string(event.Type))
 	case socketmode.EventTypeEventsAPI:
 		eventsAPIEvent, ok := event.Data.(slackevents.EventsAPIEvent)
-
 		if !ok {
-			h.Logger.Printf("error asserting EventsAPIEvent: %v", event.Data)
+			d.Logger.Printf("Error asserting EventsAPIEvent: %v", event.Data)
 			return
 		}
 
-		handler, ok := h.APIEventHandlers[eventsAPIEvent.InnerEvent.Type]
-
-		if !ok {
-			h.Logger.Printf("no handler registered for event type: %s", eventsAPIEvent.Type)
-			return
+		// Handling the callback event
+		if eventsAPIEvent.Type == slackevents.CallbackEvent {
+			switch eventsAPIEvent.InnerEvent.Type {
+			case "app_mention":
+				// Handle app_mention events
+				d.handleAppMention(eventsAPIEvent)
+			case "message":
+				// Handle message events
+				d.handleMessage(eventsAPIEvent)
+			default:
+				// Handle any unexpected inner event types
+				d.handleUnhandledEvent(eventsAPIEvent)
+			}
+		} else {
+			// Handle any unexpected top-level event types
+			d.handleUnhandledEvent(eventsAPIEvent)
 		}
 
-		if err := handler.Handle(eventsAPIEvent); err != nil {
-			h.Logger.Printf("error handling event: %v", err)
-			return
-		}
-
-		h.WSClient.Ack(*event.Request)
+		d.WSClient.Ack(*event.Request)
+	default:
+		// Log or handle completely unexpected event types
+		d.Logger.Printf("Received an unhandled event type: %s", event.Type)
 	}
+}
+
+func (d *MessageDispatcher) handleAppMention(event slackevents.EventsAPIEvent) {
+	appMentionEvent, ok := event.InnerEvent.Data.(*slackevents.AppMentionEvent)
+
+	if !ok {
+		d.Logger.Printf("Error asserting AppMentionEvent: %v", event.InnerEvent.Data)
+		return
+	}
+
+	threadID := appMentionEvent.ThreadTimeStamp
+	if threadID == "" {
+		threadID = appMentionEvent.TimeStamp
+	}
+
+	// Store the thread ID (timestamp) to track the thread
+	d.TrackedThreads.Store(threadID, true)
+
+	_, _, err := d.APIClient.PostMessage(appMentionEvent.Channel, slack.MsgOptionText("Hello, thanks for mentioning me!", false), slack.MsgOptionTS(appMentionEvent.TimeStamp))
+	if err != nil {
+		d.Logger.Printf("Error posting warning message: %v", err)
+		return
+	}
+}
+
+func (d *MessageDispatcher) handleMessage(event slackevents.EventsAPIEvent) {
+	messageEvent, ok := event.InnerEvent.Data.(*slackevents.MessageEvent)
+	if !ok {
+		d.Logger.Printf("Error asserting MessageEvent: %v", event.InnerEvent.Data)
+		return
+	}
+	if _, ok := d.TrackedThreads.Load(messageEvent.ThreadTimeStamp); ok {
+
+		_, _, err := d.APIClient.PostMessage(messageEvent.Channel, slack.MsgOptionText("Thanks for writing in this thread!", false), slack.MsgOptionTS(messageEvent.TimeStamp))
+		if err != nil {
+			d.Logger.Printf("Error posting warning message: %v", err)
+			return
+		}
+	}
+}
+
+func (d *MessageDispatcher) handleUnhandledEvent(event slackevents.EventsAPIEvent) {
+	// Log the unhandled event for review or take other appropriate actions
+	d.Logger.Printf("Received an unhandled callback event type: %s", event.InnerEvent.Type)
 }
