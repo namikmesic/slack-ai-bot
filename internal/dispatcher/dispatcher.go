@@ -10,18 +10,22 @@ import (
 )
 
 type MessageDispatcher struct {
-	APIClient      *slack.Client
-	WSClient       *socketmode.Client
-	Logger         *log.Logger
-	TrackedThreads sync.Map
+	APIClient       *slack.Client
+	WSClient        *socketmode.Client
+	botID           string
+	Logger          *log.Logger
+	TrackedThreads  sync.Map
+	TrackedMessages sync.Map
 }
 
-func NewMessageDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, logger *log.Logger) *MessageDispatcher {
+func NewMessageDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, botID string, logger *log.Logger) *MessageDispatcher {
 	return &MessageDispatcher{
-		APIClient:      apiClient,
-		WSClient:       wsClient,
-		Logger:         logger,
-		TrackedThreads: sync.Map{},
+		APIClient:       apiClient,
+		WSClient:        wsClient,
+		botID:           botID,
+		Logger:          logger,
+		TrackedThreads:  sync.Map{},
+		TrackedMessages: sync.Map{},
 	}
 }
 
@@ -84,17 +88,29 @@ func (d *MessageDispatcher) handleAppMention(event slackevents.EventsAPIEvent) {
 
 func (d *MessageDispatcher) handleMessage(event slackevents.EventsAPIEvent) {
 	messageEvent, ok := event.InnerEvent.Data.(*slackevents.MessageEvent)
+
 	if !ok {
 		d.Logger.Printf("Error asserting MessageEvent: %v", event.InnerEvent.Data)
 		return
 	}
-	if _, ok := d.TrackedThreads.Load(messageEvent.ThreadTimeStamp); ok {
 
+	if _, ok := d.TrackedThreads.Load(messageEvent.ThreadTimeStamp); ok {
+		// check if the message is already tracked
+		if _, ok := d.TrackedMessages.Load(messageEvent.TimeStamp); ok {
+			return
+		}
+
+		// prevent the bot from replying to its own messages
+		if messageEvent.User == d.botID {
+			return
+		}
 		_, _, err := d.APIClient.PostMessage(messageEvent.Channel, slack.MsgOptionText("Thanks for writing in this thread!", false), slack.MsgOptionTS(messageEvent.TimeStamp))
 		if err != nil {
 			d.Logger.Printf("Error posting warning message: %v", err)
 			return
 		}
+		// Extract message timestamp and store it to track the message
+		d.TrackedMessages.Store(messageEvent.TimeStamp, true)
 	}
 }
 

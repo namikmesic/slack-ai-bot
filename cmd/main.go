@@ -26,7 +26,7 @@ func main() {
 	slackClient := utils.NewSlackClient(ctx, cfg, applogger)
 
 	// Register the events handler
-	messageDispatcher := dispatcher.NewMessageDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.Logger)
+	messageDispatcher := dispatcher.NewMessageDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.BotID, slackClient.Logger)
 	slackClient.RegisterNewMessageDispatcher(messageDispatcher)
 
 	// Start listening for events
