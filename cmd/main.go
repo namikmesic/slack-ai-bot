@@ -25,8 +25,11 @@ func main() {
 	// Create a new Slack client
 	slackClient := utils.NewSlackClient(ctx, cfg, applogger)
 
+	// Create OpenAI client
+	openaiClient := utils.NewOpenAIClient(ctx, cfg, applogger)
+
 	// Register the events handler
-	messageDispatcher := dispatcher.NewMessageDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.BotID, slackClient.Logger)
+	messageDispatcher := dispatcher.NewMessageDispatcher(slackClient.APIClient, slackClient.WSClient, slackClient.BotID, slackClient.Logger, openaiClient.OpenaiClient)
 	slackClient.RegisterNewMessageDispatcher(messageDispatcher)
 
 	// Start listening for events

@@ -10,7 +10,8 @@ import (
 type AppConfig struct {
 	SlackAppToken string `mapstructure:"slack_app_token"`
 	SlackBotToken string `mapstructure:"slack_bot_token"`
-	IsDevelopment   bool `mapstructure:"development"`
+	OpenAiToken   string `mapstructure:"openai_api_key"`
+	IsDevelopment bool   `mapstructure:"development"`
 }
 
 // LoadConfig reads configuration from file or environment variables.
@@ -37,4 +38,3 @@ func LoadConfig(configPaths []string, configName string) (*AppConfig, error) {
 
 	return &config, nil
 }
-

@@ -3,6 +3,7 @@ module github.com/namikmesic/slack-ai-bot
 go 1.22.0
 
 require (
+	github.com/sashabaranov/go-openai v1.21.0
 	github.com/slack-go/slack v0.12.4
 	github.com/spf13/viper v1.18.2
 )
