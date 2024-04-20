@@ -4,6 +4,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/namikmesic/slack-ai-bot/internal/ai"
 	"github.com/sashabaranov/go-openai"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -13,18 +14,18 @@ import (
 type MessageDispatcher struct {
 	APIClient       *slack.Client
 	WSClient        *socketmode.Client
-	AIClient        *openai.Client
+	AI              *ai.OpenAiClient
 	botID           string
 	Logger          *log.Logger
 	TrackedThreads  sync.Map
 	TrackedMessages sync.Map
 }
 
-func NewMessageDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, botID string, logger *log.Logger, aiClient *openai.Client) *MessageDispatcher {
+func NewMessageDispatcher(apiClient *slack.Client, wsClient *socketmode.Client, botID string, logger *log.Logger, ai *ai.OpenAiClient) *MessageDispatcher {
 	return &MessageDispatcher{
 		APIClient:       apiClient,
 		WSClient:        wsClient,
-		AIClient:        aiClient,
+		AI:              ai,
 		botID:           botID,
 		Logger:          logger,
 		TrackedThreads:  sync.Map{},
@@ -82,7 +83,20 @@ func (d *MessageDispatcher) handleAppMention(event slackevents.EventsAPIEvent) {
 		// check if the message is already tracked
 		return
 	}
-	_, _, err := d.APIClient.PostMessage(appMentionEvent.Channel, slack.MsgOptionText("Hello, thanks for mentioning me!", false), slack.MsgOptionTS(appMentionEvent.TimeStamp))
+	resp, ok := d.AI.RespondToMessage(threadID, openai.ChatMessageRoleUser, appMentionEvent.Text)
+
+	if !ok {
+		d.Logger.Printf("ChatCompletion error: %v\n", resp)
+		_, _, err := d.APIClient.PostMessage(appMentionEvent.Channel, slack.MsgOptionText("Sorry, our AI is having trouble, try again later.", false), slack.MsgOptionTS(appMentionEvent.TimeStamp))
+
+		if err != nil {
+			d.Logger.Printf("Error posting warning message: %v", err)
+			return
+		}
+		return
+	}
+
+	_, _, err := d.APIClient.PostMessage(appMentionEvent.Channel, slack.MsgOptionText(resp, false), slack.MsgOptionTS(appMentionEvent.TimeStamp))
 	if err != nil {
 		d.Logger.Printf("Error posting warning message: %v", err)
 		return
@@ -98,23 +112,27 @@ func (d *MessageDispatcher) handleMessage(event slackevents.EventsAPIEvent) {
 	}
 
 	if _, ok := d.TrackedThreads.Load(messageEvent.ThreadTimeStamp); ok {
-		// check if the message is already tracked
-		if _, ok := d.TrackedMessages.Load(messageEvent.TimeStamp); ok {
-			return
-		}
-
 		// prevent the bot from replying to its own messages
 		if messageEvent.User == d.botID {
 			return
 		}
+		resp, ok := d.AI.RespondToMessage(messageEvent.ThreadTimeStamp, openai.ChatMessageRoleUser, messageEvent.Text)
 
-		_, _, err := d.APIClient.PostMessage(messageEvent.Channel, slack.MsgOptionText("Thanks for writing in this thread!", false), slack.MsgOptionTS(messageEvent.TimeStamp))
+		if !ok {
+			d.Logger.Printf("ChatCompletion error: %v\n", resp)
+			_, _, err := d.APIClient.PostMessage(messageEvent.Channel, slack.MsgOptionText("Sorry, our AI is having trouble, try again later.", false), slack.MsgOptionTS(messageEvent.TimeStamp))
+
+			if err != nil {
+				d.Logger.Printf("Error posting warning message: %v", err)
+				return
+			}
+			return
+		}
+		_, _, err := d.APIClient.PostMessage(messageEvent.Channel, slack.MsgOptionText(resp, false), slack.MsgOptionTS(messageEvent.TimeStamp))
 		if err != nil {
 			d.Logger.Printf("Error posting warning message: %v", err)
 			return
 		}
-		// Extract message timestamp and store it to track the message
-		d.TrackedMessages.Store(messageEvent.TimeStamp, true)
 	}
 }
 
