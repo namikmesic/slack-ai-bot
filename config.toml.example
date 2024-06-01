@@ -1,0 +1,4 @@
+development = false
+slack_app_token = "xxxx-x-xxxxxxx-xxxxxxx-xxxxxxx"
+slack_bot_token = "xxxx-x-xxxxxxx-xxxxxxx-xxxxxxx"
+openai_api_key = "xxxx-x-xxxxxxx-xxxxxxx-xxxxxxx"
