@@ -1,0 +1,6 @@
+services:
+  my-project-with-air:
+    image: cosmtrek/air
+    working_dir: /slack-ai-bot
+    volumes:
+      - ./:/slack-ai-bot/
